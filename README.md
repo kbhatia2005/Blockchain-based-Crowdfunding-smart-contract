@@ -1,5 +1,5 @@
 CrowdFunding Smart Contract (Solidity)
-![Chat App Screenshot](chatapp.png)
+![Overview](demoblockchain.png)
 A decentralized crowdfunding smart contract built using Solidity. This smart contract enables users to contribute funds toward a campaign, get refunds if the target is not met, and allows the campaign manager to create payment requests approved by contributors.
 
 📌 Features
