@@ -1,0 +1,159 @@
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.6.12 <0.9.0;
+contract CrowdFunding{
+    ///defining the variable like contributor target and so on
+    /// maooing concept need to understand
+    /// recipient mean donater or his address or jisko manager ne paise bhejne hai kisi kaam ke liye
+    mapping(address=>uint) public contributors;   ///mapping link the address with contributor, how much they are paying 
+address public manager ;                           /// is a data tyoe represent the address of etheruem msg.sender manager mmaan skte hai
+uint public minimumContribution;
+uint public deadline;
+uint public target;
+uint public raisedamount;    
+uint public noOfcontributors;                      //how much peaople ready to give permission o take away out money from the smart contract
+
+
+
+
+
+
+
+///coming from bottom manger accessing logic 
+struct request{
+    string description;
+    address payable recipient;  /// purpose to spend money
+    uint value;  /// how much need 
+    bool completed;
+    uint noofvoters;   
+    mapping(address=>bool) voters;  /// mapping the address of contributor aggree or not 
+}
+mapping(uint=>request) public requests;  //if multiple request from mangager
+uint public numrequest;  // its also for multiple
+
+
+
+
+
+
+
+
+/// defining the function
+constructor(uint _target,uint _deadline){      
+     ///constructor is the first function when it will deployed, when contract will deploy it set the target value and deadline
+target =_target;
+deadline=block.timestamp+_deadline;/////blocktimestamp is a global variable by which we know actual timestamp, if our block deploy in 10 sec and we want it run for more 1 hour then 10sec+3600sec
+
+minimumContribution=100 wei;  ///less than 100 donation can not be accepted 
+manager=msg.sender; ///when it will deploy then value will go to the manager
+}
+
+
+
+function sendEth() public payable{         ///through this contributor send ether 
+    require(block.timestamp < deadline,"deadline has passed"); ///logic if time limit finished of contract then no body can donate 
+require(msg.value >=minimumContribution,"minimum contribution is not met ");
+
+
+
+
+/// If these both condition met then
+if(contributors[msg.sender]==0){          ///logic where if a person send money two times then the no of contributor will remain only one for that
+    noOfcontributors++;    
+    
+}
+contributors[msg.sender]+=msg.value;
+raisedamount+=msg.value;
+}
+
+
+
+
+
+function getContractbalance() public view returns(uint){
+    return address(this).balance;
+}
+   
+
+
+
+
+   /// if total dontaton not get at proper time then moeny will be refunded logic
+function refund()public{
+    require(block.timestamp>deadline && raisedamount<target,"you are not eligible for refund");
+require(contributors[msg.sender]>0);//to check that bande ne donate kiya hai ya nhi ya to vese hi refund le rha hai
+address payable user=payable(msg.sender);  ///payble to transfer the money back
+user.transfer(contributors[msg.sender]);
+user.transfer(contributors[msg.sender]);
+contributors[msg.sender]=0;
+}
+
+/// until here we can contribute the money refund the money now come on the second part of the contracrt which is 
+/// manager . now manager can access only that ether or get that ether when more than 50 percent contributer are ready to vote or in favour
+///from here we go on top to code
+
+
+
+
+
+
+///above we create a strucutre o request now we will create a function how can request or access the manager money 
+modifier onlyManger(){
+    require(msg.sender==manager,"only manager can call this function");
+    _;       /// who can modify the time total fund required called modifier here modifier is manager
+}
+function createrequests(string memory _description,address payable _recipient,uint _value)public onlyManger   ///request kitne paise ke liye ho rhi h ,description mean kis chij ke liye hum request kr rhe hai, kis addres ke liye ,
+{
+    request storage newRequest = requests[numrequest];  ///storage = when we create  strruct and use mapping inside that then we cant use memory keyword, then we creaet newrequest
+numrequest++;
+newRequest.description=_description;/// through newrequest we point onthe description
+newRequest.recipient=_recipient;   ///newrequest is changing the structure for request 0
+newRequest.value=_value;           //// 1hr 1 min imp 
+newRequest.completed=false;
+newRequest.noofvoters=0;
+
+
+}
+
+
+
+
+
+/// voting request
+function voteRequest(uint _requestNo) public{
+    require(contributors[msg.sender]>0,"you must be contributor");
+    request storage thisRequest=requests[_requestNo];
+    require(thisRequest.voters[msg.sender]==false,"you have alraedy voted");
+    thisRequest.voters[msg.sender]=true;
+    thisRequest.noofvoters++;
+}
+
+
+
+
+
+
+
+///last function checking voting in favour if yes then send eteher to the manager
+function makePayment(uint _requestNo) public onlyManger{
+    require(raisedamount>=target);
+    request storage thisRequest=requests[_requestNo];
+    require(thisRequest.completed==false,"THE REQUEST HAS BEEN COMPLETED");
+    require(thisRequest.noofvoters >noOfcontributors/2,"Majority does not support");
+    thisRequest.recipient.transfer(thisRequest.value);
+    thisRequest.completed=true;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
